@@ -19,6 +19,7 @@
 from ddsp import core
 from ddsp import effects
 from ddsp import losses
+from ddsp import plotting
 from ddsp import processors
 from ddsp import spectral_ops
 from ddsp import synths
