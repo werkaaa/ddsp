@@ -60,14 +60,16 @@ def get_strategy(tpu='', cluster_config=''):
     tf.config.experimental_connect_to_cluster(resolver)
     tf.tpu.experimental.initialize_tpu_system(resolver)
     strategy = tf.distribute.TPUStrategy(resolver)
-  elif  cluster_config:
+  elif cluster_config:
     if not isinstance(cluster_config, dict):
       cluster_config = json.loads(cluster_config)
     cluster_spec = tf.train.ClusterSpec(cluster_config['cluster'])
     resolver = tf.distribute.cluster_resolver.SimpleClusterResolver(
         cluster_spec=cluster_spec,
         task_type=cluster_config['task']['type'],
-        task_id=cluster_config['task']['index'])
+        task_id=cluster_config['task']['index'],
+        num_accelerators={'GPU': len(tf.config.list_physical_devices('GPU'))},
+        rpc_layer='grpc')
     strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
         cluster_resolver=resolver)
   else:
