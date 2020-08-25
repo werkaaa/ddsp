@@ -83,15 +83,14 @@ flags.DEFINE_enum('mode', 'train', ['train', 'eval', 'sample'],
                   'Whether to train, evaluate, or sample from the model.')
 flags.DEFINE_string('save_dir', '~/tmp/ddsp',
                     'Path where checkpoints and summary events will be saved '
-                    'during training and evaluation. If given string is None '
-                    'no checkpoints and summaries will be stored.')
+                    'during training and evaluation.')
 flags.DEFINE_string('restore_dir', '',
                     'Path from which checkpoints will be restored before '
                     'training. Can be different than the save_dir.')
 flags.DEFINE_string('tpu', '', 'Address of the TPU. No TPU if left blank.')
-flags.DEFINE_string('cluster_config', '', 'Worker-specific JSON string for'
-                    'multiworker setup. For more information check'
-                    'train_util.get_strategy() docstring.')
+flags.DEFINE_string('cluster_config', '',
+                    'Worker-specific JSON string for multiworker setup. '
+                    'For more information check train_util.get_strategy().')
 flags.DEFINE_boolean('allow_memory_growth', False,
                      'Whether to grow the GPU memory usage as is needed by the '
                      'process. Prevents crashes on GPUs with smaller memory.')
@@ -215,8 +214,8 @@ def allow_memory_growth():
 def main(unused_argv):
   """Parse gin config and run ddsp training, evaluation, or sampling."""
   restore_dir = os.path.expanduser(FLAGS.restore_dir)
-  save_dir = (os.path.expanduser(FLAGS.save_dir) if FLAGS.save_dir != 'None'
-              else None)
+  save_dir = os.path.expanduser(FLAGS.save_dir)
+
   # If no separate restore directory is given, use the save directory.
   restore_dir = save_dir if not restore_dir else restore_dir
   logging.info('Restore Dir: %s', restore_dir)
