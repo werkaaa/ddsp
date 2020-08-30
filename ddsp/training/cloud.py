@@ -20,16 +20,8 @@ import re
 
 from absl import logging
 from google.cloud import storage
-# import hypertune
+import hypertune
 
-
-# def report_metric_to_hypertune(metric_value, step, tag='Loss'):
-#   """Use hypertune to report metrics for hyperparameter tuning."""
-#   hpt = hypertune.HyperTune()
-#   hpt.report_hyperparameter_tuning_metric(
-#       hyperparameter_metric_tag=tag,
-#       metric_value=metric_value,
-#       global_step=step)
 
 def download_from_gstorage(gstorage_path, local_path):
   """Downloads a file from the bucket.
@@ -85,3 +77,12 @@ def make_file_paths_local(paths, local_directory):
       else:
         local_paths.append(path)
     return local_paths
+
+
+def report_metric_to_hypertune(metric_value, step, tag='Loss'):
+  """Use hypertune to report metrics for hyperparameter tuning."""
+  hpt = hypertune.HyperTune()
+  hpt.report_hyperparameter_tuning_metric(
+      hyperparameter_metric_tag=tag,
+      metric_value=metric_value,
+      global_step=step)

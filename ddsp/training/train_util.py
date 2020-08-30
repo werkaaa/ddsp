@@ -20,6 +20,7 @@ import os
 import time
 
 from absl import logging
+from ddsp.training import cloud
 import gin
 import tensorflow.compat.v2 as tf
 
@@ -153,7 +154,8 @@ def train(data_provider,
           steps_per_save=300,
           save_dir='~/tmp/ddsp',
           restore_dir='~/tmp/ddsp',
-          early_stop_loss_value=None):
+          early_stop_loss_value=None,
+          report_loss_to_hypertune=False):
   """Main training loop.
 
   Args:
@@ -164,12 +166,14 @@ def train(data_provider,
    steps_per_summary: Number of training steps per summary save.
    steps_per_save: Number of training steps per checkpoint save.
    save_dir: Directory where checkpoints and summaries will be saved.
-     If None, no checkpoints or summaries will be saved.
+     If empty string, no checkpoints or summaries will be saved.
    restore_dir: Directory where latest checkpoints for resuming the training
      are stored. If there are no checkpoints in this directory, training will
      begin anew.
    early_stop_loss_value: Early stopping. When the total_loss reaches below this
      value training stops. If None training will run for num_steps steps.
+   report_loss_to_hypertune: Report loss values to hypertune package for
+     hyperparameter tuning, such as on Google Cloud AI-Platform.
   """
   # Get a distributed dataset iterator.
   dataset = data_provider.get_batch(batch_size, shuffle=True, repeats=-1)
@@ -182,7 +186,7 @@ def train(data_provider,
   # Load latest checkpoint if one exists in load directory.
   trainer.restore(restore_dir)
 
-  if save_dir is not None:
+  if save_dir:
     # Set up the summary writer and metrics.
     summary_dir = os.path.join(save_dir, 'summaries', 'train')
     summary_writer = tf.summary.create_file_writer(summary_dir)
@@ -221,7 +225,7 @@ def train(data_provider,
       logging.info(log_str)
 
       # Write Summaries.
-      if step % steps_per_summary == 0 and save_dir is not None:
+      if step % steps_per_summary == 0 and save_dir:
         # Speed.
         steps_per_sec = steps_per_summary / (time.time() - tick)
         tf.summary.scalar('steps_per_sec', steps_per_sec, step=step)
@@ -232,6 +236,10 @@ def train(data_provider,
           tf.summary.scalar('losses/{}'.format(k), metric.result(), step=step)
           metric.reset_states()
 
+      # Report metrics for hyperparameter tuning if enabled.
+      if report_loss_to_hypertune:
+        cloud.report_metric_to_hypertune(losses['total_loss'], step)
+
       # Stop the training when the loss reaches given value
       if (early_stop_loss_value is not None and
           losses['total_loss'] <= early_stop_loss_value):
@@ -239,13 +247,13 @@ def train(data_provider,
                      early_stop_loss_value)
 
         # Write a final checkpoint.
-        if save_dir is not None:
+        if save_dir:
           trainer.save(save_dir)
           summary_writer.flush()
         break
 
       # Save Model.
-      if step % steps_per_save == 0 and save_dir is not None:
+      if step % steps_per_save == 0 and save_dir:
         trainer.save(save_dir)
         summary_writer.flush()
 
